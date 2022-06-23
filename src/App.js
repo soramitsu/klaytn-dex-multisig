@@ -1,19 +1,20 @@
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import {Accordion, Button, Form} from "react-bootstrap";
+import { Accordion, Button, Form } from "react-bootstrap";
 import ViewContracts from "./components/ViewContracts";
 import multisignABI from './utils/multisign.json'
 import farmingABI from './utils/farming.json'
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 
 function App() {
-    const {caver, klaytn} = window
+    const { caver, klaytn } = window
     const [address, setAddress] = useState(null)
     const [toAddress, setToAddress] = useState("0x32bE07FB9dBf294c2e92715F562f7aBA02b7443A")
     const [contracts, setContracts] = useState([])
     const [transactions, setTransactions] = React.useState({
         pending: [],
-        exec: []
+        exec: [],
+        failed: []
     })
     const multiSign = new caver.klay.Contract(
         multisignABI.abi,
@@ -27,7 +28,7 @@ function App() {
             setAddress(address)
         })
 
-        setContracts(tabs.map(({abi, address, name}) => ({
+        setContracts(tabs.map(({ abi, address, name }) => ({
             abi,
             address,
             name,
@@ -47,33 +48,43 @@ function App() {
 
         const pendingCount = await multiSign.methods.getTransactionCount(true, false).call()
         const execCount = await multiSign.methods.getTransactionCount(false, true).call()
+        const required = await multiSign.methods.required().call()
 
-
-        console.log({pendingCount, execCount})
+        console.log({ pendingCount, execCount })
 
         const pendingTrIds = await multiSign.methods.getTransactionIds(0, pendingCount, true, false).call()
         const execTrIds = await multiSign.methods.getTransactionIds(0, execCount, false, true).call()
 
-        console.log({pendingTrIds, execTrIds})
+        console.log({ pendingTrIds, execTrIds })
 
-        const pendingData = await Promise.all(pendingTrIds
-            .filter((id,index) => (id === 0 && index === 0) || id !== 0)
+        const pendingTempData = (await Promise.all(pendingTrIds
+            .filter((id, index) => (id === 0 && index === 0) || id !== 0)
             .map(async (id) => {
-                return await multiSign.methods.getTransactionInfo(id).call()
-            }))
+                return {
+                    transaction: await multiSign.methods.getTransactionInfo(id).call(),
+                    voted: await multiSign.methods.getConfirmations(id).call(),
+                    id
+                }
+            })))
 
         const execData = await Promise.all(execTrIds
-            .filter((id,index) => (id === 0 && index === 0) || id !== 0)
+            .filter((id, index) => (id === 0 && index === 0) || id !== 0)
             .map(async (id) => {
-                return await multiSign.methods.getTransactionInfo(id).call()
+                return {
+                    transaction: await multiSign.methods.getTransactionInfo(id).call(),
+                    voted: await multiSign.methods.getConfirmations(id).call(),
+                    id
+                }
             }))
-
+        const failedData = pendingTempData.filter((id) => (id.transaction.executed_ === false && id.transaction.votesLength_ >= required));
+        const pendingData = pendingTempData.filter((id) => (id.transaction.executed_ === false && id.transaction.votesLength_ < required));
         setTransactions({
             pending: pendingData,
-            exec: execData
+            exec: execData,
+            failed: failedData
         })
 
-        console.log({pendingData, execData})
+        console.log({ pendingData, execData, failedData })
     }
 
     if (!caver || !klaytn) {
@@ -133,7 +144,7 @@ function App() {
                     <div>From Address: <strong>{address || 'Not connected'}</strong></div>
                     <div>To Address: <strong>{toAddress || 'Not connected'}</strong></div>
 
-                    {contracts.map(({name, address}) => (
+                    {contracts.map(({ name, address }) => (
                         <div key={address}>{name}: {address} </div>
                     ))}
                 </div>
@@ -170,23 +181,20 @@ function App() {
                 <Button className="my-3" onClick={getTransactions}>Update</Button>
 
                 <div>
-                    <h4>Pending</h4>
+                    <h4>Failed</h4>
                     <Accordion>
-                        {transactions.pending.map((it, index) => (
-                            <Accordion.Item key={it.data_} eventKey={it.data_}>
+                        {transactions.failed.map((it) => (
+                            <Accordion.Item key={it.transaction.data_} eventKey={it.transaction.data_}>
                                 <Accordion.Header>
-                                    <div>destination_: {it.destination_}</div>
+                                    <div><strong>ID:</strong> {it.id}, <strong>proposer:</strong> {it.voted[0]}</div>
                                 </Accordion.Header>
                                 <Accordion.Body>
-                                    <div className="border-bottom mb-2"><strong>Param 0:</strong> {it[0]}</div>
-                                    <div className="border-bottom mb-2"><strong>Param 1:</strong> {it[1]}</div>
-                                    <div className="border-bottom mb-2"><strong>Param 2:</strong> {it[2]}</div>
-                                    <div className="border-bottom mb-2"><strong>Param 3:</strong> {it[3]}</div>
-                                    <div className="border-bottom mb-2"><strong>Data:</strong> {it.data_}</div>
-                                    <div className="border-bottom mb-2"><strong>destination_:</strong> {it.destination_}</div>
-                                    <div className="border-bottom mb-2"><strong>executed_:</strong> {it.executed_ ? 'true' : 'false'}</div>
-                                    <div className="border-bottom mb-2"><strong>value_:</strong> {it.value_}</div>
-                                    <div className="border-bottom mb-2"><strong>votesLength_:</strong> {it.votesLength_}</div>
+                                    <div className="border-bottom mb-2"><strong>Target:</strong> {it.transaction.destination_}</div>
+                                    <div className="border-bottom mb-2"><strong>Value:</strong> {it.transaction.value_}</div>
+                                    <div className="border-bottom mb-2"><strong>Data:</strong> {it.transaction.data_}</div>
+                                    <div className="border-bottom mb-2"><strong>Executed:</strong> {it.transaction.executed_ ? 'true' : 'false'}</div>
+                                    <div className="border-bottom mb-2"><strong>Votes:</strong> {it.transaction.votesLength_}</div>
+                                    <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(it.voted)}</div>
                                 </Accordion.Body>
                             </Accordion.Item>
                         ))}
@@ -194,23 +202,41 @@ function App() {
                 </div>
 
                 <div>
-                    <h4 className="mt-3">Execution</h4>
+                    <h4 className="mt-3">Pending</h4>
                     <Accordion>
-                        {transactions.exec.map((it, index) => (
-                            <Accordion.Item key={it.data_} eventKey={it.data_}>
+                        {transactions.pending.map((it) => (
+                            <Accordion.Item key={it.transaction.data_} eventKey={it.transaction.data_}>
                                 <Accordion.Header>
-                                    <div>destination_: {it.destination_}</div>
+                                    <div><strong>ID:</strong> {it.id}, <strong>proposer:</strong> {it.voted[0]}</div>
                                 </Accordion.Header>
                                 <Accordion.Body>
-                                    <div className="border-bottom mb-2">Param 0: {it[0]}</div>
-                                    <div className="border-bottom mb-2">Param 1: {it[1]}</div>
-                                    <div className="border-bottom mb-2">Param 2: {it[2]}</div>
-                                    <div className="border-bottom mb-2">Param 3: {it[3]}</div>
-                                    <div className="border-bottom mb-2">Data: {it.data_}</div>
-                                    <div className="border-bottom mb-2">destination_: {it.destination_}</div>
-                                    <div className="border-bottom mb-2">executed_: {it.executed_ ? 'true' : 'false'}</div>
-                                    <div className="border-bottom mb-2">value_: {it.value_}</div>
-                                    <div className="border-bottom mb-2">votesLength_: {it.votesLength_}</div>
+                                    <div className="border-bottom mb-2"><strong>Target:</strong> {it.transaction.destination_}</div>
+                                    <div className="border-bottom mb-2"><strong>Value:</strong> {it.transaction.value_}</div>
+                                    <div className="border-bottom mb-2"><strong>Data:</strong> {it.transaction.data_}</div>
+                                    <div className="border-bottom mb-2"><strong>Executed:</strong> {it.transaction.executed_ ? 'true' : 'false'}</div>
+                                    <div className="border-bottom mb-2"><strong>Votes:</strong> {it.transaction.votesLength_}</div>
+                                    <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(it.voted)}</div>
+                                </Accordion.Body>
+                            </Accordion.Item>
+                        ))}
+                    </Accordion>
+                </div>
+
+                <div>
+                    <h4 className="mt-3">Executed</h4>
+                    <Accordion>
+                        {transactions.exec.map((it) => (
+                            <Accordion.Item key={it.transaction.data_} eventKey={it.transaction.data_}>
+                                <Accordion.Header>
+                                    <div><strong>ID:</strong> {it.id}, <strong>proposer:</strong> {it.voted[0]}</div>
+                                </Accordion.Header>
+                                <Accordion.Body>
+                                    <div className="border-bottom mb-2"><strong>Target:</strong> {it.transaction.destination_}</div>
+                                    <div className="border-bottom mb-2"><strong>Value:</strong> {it.transaction.value_}</div>
+                                    <div className="border-bottom mb-2"><strong>Data:</strong> {it.transaction.data_}</div>
+                                    <div className="border-bottom mb-2"><strong>Executed:</strong> {it.transaction.executed_ ? 'true' : 'false'}</div>
+                                    <div className="border-bottom mb-2"><strong>Votes:</strong> {it.transaction.votesLength_}</div>
+                                    <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(it.voted)}</div>
                                 </Accordion.Body>
                             </Accordion.Item>
                         ))}
@@ -250,7 +276,7 @@ function App() {
             </Form>
 
             <Accordion className="col-8 mx-auto">
-                {contracts.map(({name, contract, abi}, i) => (
+                {contracts.map(({ name, contract, abi }, i) => (
                     <Accordion.Item key={`${name}-${i}`} eventKey={name}>
                         <Accordion.Header>
                             <div

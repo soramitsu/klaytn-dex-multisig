@@ -167,11 +167,16 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
     const handleMultiSign = async () => {
         try {
             const [encode, targetAddress] = await handleEncodeABI()
+            const gas = await multiSign.methods.submitTransaction(targetAddress, "0", encode)
+                .estimateGas({
+                    from: address,
+                    gasPrice: GAS_PRICE,
+                })
             const res = await multiSign.methods.submitTransaction(targetAddress, "0", encode)
                 .send({
                     from: address,
                     gasPrice: GAS_PRICE,
-                    gas: '50000000'
+                    gas
                 })
             console.log(res)
             setResult(`${item.name}: ${res.transactionHash}`)
@@ -227,7 +232,7 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
                         <Button type="button" className="mt-3 m-2" onClick={estimateGas}>Estimate Gas</Button>
                     )}
                     {item.stateMutability === "nonpayable" && (
-                        <Button type="button" className="mt-3 m-2" onClick={handleMultiSign}>Send multisign</Button>
+                        <Button type="button" className="mt-3 m-2" onClick={handleMultiSign}>Submit</Button>
                     )}
                     <Button type="button" className="mt-3 m-2" onClick={handleEncodeABI}>
                         Encode ABI
