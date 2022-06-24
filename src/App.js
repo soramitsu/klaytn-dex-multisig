@@ -148,7 +148,7 @@ function App() {
                     .send({
                         from: address,
                         gasPrice,
-                        gas: 200000
+                        gas: 5000000
                     })
                 setResults(`${_tx.transactionHash}`)
             }
