@@ -8,6 +8,7 @@ import React, { useEffect, useState } from "react";
 
 function App() {
     const { caver, klaytn } = window
+    const [results, setResults] = React.useState('')
     const [address, setAddress] = useState(null)
     const [toAddress, setToAddress] = useState("0x32bE07FB9dBf294c2e92715F562f7aBA02b7443A")
     const [contracts, setContracts] = useState([])
@@ -136,6 +137,56 @@ function App() {
     const handleDelete = (name) => () => {
         setContracts(contracts.filter((c) => c.name !== name))
     }
+    const handleConfirm = async (tx) => {
+        try {
+            const lowerCase = tx.voted.map(addresses => {
+                return addresses.toLowerCase();
+            });
+            if (!lowerCase.includes(address)) {
+                const gasPrice = await caver.klay.getGasPrice();
+                const _tx = await multiSign.methods.confirmTransaction(tx.id)
+                    .send({
+                        from: address,
+                        gasPrice,
+                        gas: 200000
+                    })
+                setResults(`${_tx.transactionHash}`)
+            }
+            else {
+                setResults("Already confirmed")
+            }
+        } catch (e) {
+            setResults(`${e.message}`)
+        }
+
+    }
+
+    const handleRevoke = async (tx) => {
+        try {
+            const lowerCase = tx.voted.map(addresses => {
+                return addresses.toLowerCase();
+            });
+            if (lowerCase.includes(address)) {
+                const gasPrice = await caver.klay.getGasPrice();
+                const gas = await multiSign.methods.revokeConfirmation(tx.id)
+                    .estimateGas({
+                        from: address,
+                        gasPrice
+                    })
+                const _tx = await multiSign.methods.revokeConfirmation(tx.id)
+                    .send({
+                        from: address,
+                        gasPrice,
+                        gas
+                    })
+                setResults(`${_tx.transactionHash}`)
+            } else {
+                setResults("Not confirmed")
+            }
+        } catch (e) {
+            setResults(`${e.message}`)
+        }
+    }
 
     return (
         <div className="App">
@@ -195,6 +246,12 @@ function App() {
                                     <div className="border-bottom mb-2"><strong>Executed:</strong> {it.transaction.executed_ ? 'true' : 'false'}</div>
                                     <div className="border-bottom mb-2"><strong>Votes:</strong> {it.transaction.votesLength_}</div>
                                     <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(it.voted)}</div>
+                                    <Button className="my-2" onClick={() => handleRevoke(it)}>Revoke</Button>
+                                    {results && (
+                                        <div className="mt-2">
+                                            Result {results}
+                                        </div>
+                                    )}
                                 </Accordion.Body>
                             </Accordion.Item>
                         ))}
@@ -205,9 +262,12 @@ function App() {
                     <h4 className="mt-3">Pending</h4>
                     <Accordion>
                         {transactions.pending.map((it) => (
-                            <Accordion.Item key={it.transaction.data_} eventKey={it.transaction.data_}>
+                            <Accordion.Item key={it.id} eventKey={it.id}>
                                 <Accordion.Header>
-                                    <div><strong>ID:</strong> {it.id}, <strong>proposer:</strong> {it.voted[0]}</div>
+                                    <div
+                                        className="w-100 d-flex full-w flex-row justify-content-between pe-3 align-items-center">
+                                        <span><strong>ID:</strong> {it.id}, <strong>proposer:</strong> {it.voted[0]}</span>
+                                    </div>
                                 </Accordion.Header>
                                 <Accordion.Body>
                                     <div className="border-bottom mb-2"><strong>Target:</strong> {it.transaction.destination_}</div>
@@ -216,6 +276,13 @@ function App() {
                                     <div className="border-bottom mb-2"><strong>Executed:</strong> {it.transaction.executed_ ? 'true' : 'false'}</div>
                                     <div className="border-bottom mb-2"><strong>Votes:</strong> {it.transaction.votesLength_}</div>
                                     <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(it.voted)}</div>
+                                    <Button className="my-2 me-2" onClick={() => handleConfirm(it)}>Confirm</Button>
+                                    <Button className="m-2" onClick={() => handleRevoke(it)}>Revoke</Button>
+                                    {results && (
+                                        <div className="mt-2">
+                                            Result {results}
+                                        </div>
+                                    )}
                                 </Accordion.Body>
                             </Accordion.Item>
                         ))}
