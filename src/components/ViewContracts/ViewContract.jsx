@@ -41,7 +41,7 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
         if (!contract.methods[name]) {
             console.log(contract.methods, item.name)
             setResult('Function not exist')
-            throw 'NOT EXISTS'
+            throw new Error('NOT EXISTS')
         }
         return true
     }
