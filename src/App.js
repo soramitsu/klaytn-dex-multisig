@@ -1,15 +1,16 @@
-import './App.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import "./App.css";
+import "bootstrap/dist/css/bootstrap.min.css";
 import { Accordion, Button, Form } from "react-bootstrap";
 import ViewContracts from "./components/ViewContracts";
 import ViewTransactions from "./components/ViewTransactions";
-import multisignABI from './utils/multisign.json'
-import farmingABI from './utils/farming.json'
+import { tabs } from "./config/constants/tabs";
+import { getMultisigContract, getDecoder } from "./utils/contractHelper";
+import { getTransactions } from "./utils/getTransactionsHelper";
 import React, { useEffect, useState } from "react";
 
 function App() {
     const { caver, klaytn } = window
-    const [address, setAddress] = useState(null)
+    const [address, setAddress] = useState('')
     const [toAddress, setToAddress] = useState("0x32bE07FB9dBf294c2e92715F562f7aBA02b7443A")
     const [contracts, setContracts] = useState([])
     const [transactions, setTransactions] = useState({
@@ -17,11 +18,8 @@ function App() {
         executed: [],
         pending: [],
     })
-    const multiSign = new caver.klay.Contract(
-        multisignABI.abi,
-        "0xcF00533ad18d86f00d843BEdc105cCa5b5A129CE"
-    )
-
+    const multiSign = getMultisigContract()
+    const decoder = getDecoder()
     useEffect(() => {
         klaytn.enable().then((addresses) => {
             const address = addresses[0]
@@ -38,70 +36,19 @@ function App() {
                 address
             )
         })))
-        getTransactions()
+        fetchData()
         // setInterval(getTransactions, 5000)
     }, [])
 
-    const getTransactions = async () => {
-        const pendingCount = await multiSign.methods.getTransactionCount(true, false).call()
-        const execCount = await multiSign.methods.getTransactionCount(false, true).call()
-        const required = await multiSign.methods.required().call()
-
-        console.log({ pendingCount, execCount })
-
-        const pendingTrIds = await multiSign.methods.getTransactionIds(0, pendingCount, true, false).call()
-        const execTrIds = await multiSign.methods.getTransactionIds(0, execCount, false, true).call()
-
-        console.log({ pendingTrIds, execTrIds })
-
-        const pendingTempData = (await Promise.all(pendingTrIds
-            .filter((id, index) => (id === 0 && index === 0) || id !== 0)
-            .map(async (id) => {
-                return {
-                    transaction: await multiSign.methods.getTransactionInfo(id).call(),
-                    voted: await multiSign.methods.getConfirmations(id).call(),
-                    id
-                }
-            })))
-
-        const execData = await Promise.all(execTrIds
-            .filter((id, index) => (id === 0 && index === 0) || id !== 0)
-            .map(async (id) => {
-                return {
-                    transaction: await multiSign.methods.getTransactionInfo(id).call(),
-                    voted: await multiSign.methods.getConfirmations(id).call(),
-                    id
-                }
-            }))
-        const failedData = pendingTempData.filter((id) => (id.transaction.executed_ === false && id.transaction.votesLength_ >= required));
-        const pendingData = pendingTempData.filter((id) => (id.transaction.executed_ === false && id.transaction.votesLength_ < required));
-        setTransactions({
-            failed: failedData,
-            executed: execData,
-            pending: pendingData
-            
-        })
-
-        console.log({ pendingData, execData, failedData })
+    const fetchData = async () => {
+        const data = await getTransactions()
+        setTransactions(data)
     }
 
     if (!caver || !klaytn) {
-        alert('Kaikas is not installed')
+        alert("Kaikas is not installed")
         return null
     }
-
-    const tabs = [
-        {
-            address: '0xcF00533ad18d86f00d843BEdc105cCa5b5A129CE',
-            name: 'Multi Sign Contract',
-            abi: multisignABI.abi
-        },
-        {
-            address: '0x32bE07FB9dBf294c2e92715F562f7aBA02b7443A',
-            name: 'Farming Contract',
-            abi: farmingABI.abi
-        }
-    ]
 
     const handleSubmit = (event) => {
         event.preventDefault()
@@ -177,8 +124,9 @@ function App() {
 
             <div className="border rounded p-3 mb-3 col-8 mx-auto my-2">
                 <h3>Transactions</h3>
-                <Button className="my-3" onClick={() => {getTransactions()}}>Update</Button>
+                <Button className="my-3" onClick={() => {fetchData()}}>Update</Button>
                 <ViewTransactions
+                    decoder={decoder}
                     transactions={transactions}
                     multisig={multiSign}
                     address={address}
@@ -223,7 +171,7 @@ function App() {
                         <Accordion.Header>
                             <div
                                 className="w-100 d-flex full-w flex-row justify-content-between px-3 align-content-center">
-                                <span>{name}</span>
+                                <div className="align-self-center">{name}</div>
                                 <Button onClick={() => {handleDelete(name)}} size="sm" variant="danger">Delete</Button>
                             </div>
                         </Accordion.Header>

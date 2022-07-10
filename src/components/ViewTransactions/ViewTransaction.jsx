@@ -1,7 +1,7 @@
 import React from "react";
 import { Accordion, Button } from "react-bootstrap";
 
-const ViewTransaction = ({ transaction, multisig, address, caver, status }) => {
+const ViewTransaction = ({ decoder, transaction, multisig, address, caver, status }) => {
 
     const [results, setResults] = React.useState('')
 
@@ -82,6 +82,31 @@ const ViewTransaction = ({ transaction, multisig, address, caver, status }) => {
             )
         }
     }
+    const decodeMethod = (calldata) => {
+        const decoded = decoder.decodeMethod(calldata);
+        if (decoded !== undefined) {
+            if (decoded.params.length) {
+                let params = '';
+                Object.keys(decoded.params).forEach(key => {
+                    params += `${decoded.params[key].type} ${decoded.params[key].name}, `
+                })
+                const descripton = `${decoded.name}(${params.slice(0, -2)})`;
+
+                return (
+                    <div>
+                        <div>{descripton} </div>
+                        <span>Params:</span>
+                        <div>{decoded.params.map((param, i) => (
+                            <div key={i}>{param.name}: {JSON.stringify(param.value)}</div>
+                            ))} 
+                        </div>
+                    </div>
+                    
+                )
+            }
+        }
+        return "unknown method";
+    }
     return (
         <Accordion.Item key={transaction.id} eventKey={transaction.id}>
             <Accordion.Header>
@@ -93,7 +118,8 @@ const ViewTransaction = ({ transaction, multisig, address, caver, status }) => {
             <Accordion.Body>
                 <div className="border-bottom mb-2"><strong>Target:</strong> {transaction.transaction.destination_}</div>
                 <div className="border-bottom mb-2"><strong>Value:</strong> {transaction.transaction.value_}</div>
-                <div className="border-bottom mb-2"><strong>Data:</strong> {transaction.transaction.data_}</div>
+                <div className="border-bottom mb-2"><strong>Calldata:</strong> {transaction.transaction.data_}</div>
+                <div className="border-bottom mb-2"><strong>Decoded:</strong> {decodeMethod(transaction.transaction.data_)}</div>
                 <div className="border-bottom mb-2"><strong>Executed:</strong> {transaction.transaction.executed_ ? 'true' : 'false'}</div>
                 <div className="border-bottom mb-2"><strong>Votes:</strong> {transaction.transaction.votesLength_}</div>
                 <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(transaction.voted)}</div>
