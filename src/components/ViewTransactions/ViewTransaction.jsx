@@ -98,34 +98,36 @@ const ViewTransaction = ({ decoder, transaction, multisig, address, caver, statu
                         <span>Params:</span>
                         <div>{decoded.params.map((param, i) => (
                             <div key={i}>{param.name}: {JSON.stringify(param.value)}</div>
-                            ))} 
+                        ))}
                         </div>
                     </div>
-                    
+
                 )
             }
         }
         return "unknown method";
     }
     return (
-        <Accordion.Item key={transaction.id} eventKey={transaction.id}>
-            <Accordion.Header>
-                <div
-                    className="w-100 d-flex full-w flex-row justify-content-between pe-3 align-transactionems-center">
-                    <span><strong>ID:</strong> {transaction.id}, <strong>proposer:</strong> {transaction.voted[0]}</span>
-                </div>
-            </Accordion.Header>
-            <Accordion.Body>
-                <div className="border-bottom mb-2"><strong>Target:</strong> {transaction.transaction.destination_}</div>
-                <div className="border-bottom mb-2"><strong>Value:</strong> {transaction.transaction.value_}</div>
-                <div className="border-bottom mb-2"><strong>Calldata:</strong> {transaction.transaction.data_}</div>
-                <div className="border-bottom mb-2"><strong>Decoded:</strong> {decodeMethod(transaction.transaction.data_)}</div>
-                <div className="border-bottom mb-2"><strong>Executed:</strong> {transaction.transaction.executed_ ? 'true' : 'false'}</div>
-                <div className="border-bottom mb-2"><strong>Votes:</strong> {transaction.transaction.votesLength_}</div>
-                <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(transaction.voted)}</div>
-                {handleStatus(status)}
-            </Accordion.Body>
-        </Accordion.Item>
+        <Accordion>
+            <Accordion.Item key={transaction.id} eventKey={transaction.id}>
+                <Accordion.Header>
+                    <div
+                        className="w-100 d-flex full-w flex-row justify-content-between pe-3 align-transactionems-center">
+                        <span><strong>ID:</strong> {transaction.id}, <strong>proposer:</strong> {transaction.voted[0]}</span>
+                    </div>
+                </Accordion.Header>
+                <Accordion.Body>
+                    <div className="border-bottom mb-2"><strong>Target:</strong> {transaction.transaction.destination_}</div>
+                    <div className="border-bottom mb-2"><strong>Value:</strong> {transaction.transaction.value_}</div>
+                    <div className="border-bottom mb-2"><strong>Calldata:</strong> {transaction.transaction.data_}</div>
+                    <div className="border-bottom mb-2"><strong>Decoded:</strong> {decodeMethod(transaction.transaction.data_)}</div>
+                    <div className="border-bottom mb-2"><strong>Executed:</strong> {transaction.transaction.executed_ ? 'true' : 'false'}</div>
+                    <div className="border-bottom mb-2"><strong>Votes:</strong> {transaction.transaction.votesLength_}</div>
+                    <div className="border-bottom mb-2"><strong>Voted:</strong> {JSON.stringify(transaction.voted)}</div>
+                    {handleStatus(status)}
+                </Accordion.Body>
+            </Accordion.Item>
+        </Accordion>
     )
 
 }
