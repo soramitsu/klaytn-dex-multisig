@@ -77,7 +77,6 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
                 value: e.target.value
             }
         })
-        console.log('hey')
     }
 
     const handleCall = async () => {
@@ -111,13 +110,13 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
             if (getParams()?.length) {
                 gas = await contract.methods[item.name](...getParams()).estimateGas({
                     from: address,
-                    gasPrice: GAS_PRICE,
+                    gasPrice: await GAS_PRICE,
                 })
 
 
                 res = await contract.methods[item.name](...getParams()).send({
                     from: address,
-                    gasPrice: GAS_PRICE,
+                    gasPrice: await GAS_PRICE,
                     gas: '50000000'
                 })
             }
@@ -125,11 +124,11 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
             if (!getParams()?.length) {
                 gas = await contract.methods[item.name]().estimateGas({
                     from: address,
-                    gasPrice: GAS_PRICE,
+                    gasPrice: await GAS_PRICE,
                 })
                 res = await contract.methods[item.name]().send({
                     from: address,
-                    gasPrice: GAS_PRICE,
+                    gasPrice: await GAS_PRICE,
                     gas: '50000000'
                 })
             }
@@ -150,7 +149,7 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
                     .estimateGas({
                         from: address,
                         to: toAddress,
-                        gasPrice: GAS_PRICE,
+                        gasPrice: await GAS_PRICE,
                     })
             }
 
@@ -158,7 +157,7 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
                 gas = await contract.methods[item.name]().estimateGas({
                     from: address,
                     to: toAddress,
-                    gasPrice: GAS_PRICE,
+                    gasPrice: await GAS_PRICE,
                 })
             }
             setResult(`gas used: ${gas}`)
@@ -173,12 +172,12 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
             const gas = await multiSign.methods.submitTransaction(targetAddress, "0", encode)
                 .estimateGas({
                     from: address,
-                    gasPrice: GAS_PRICE,
+                    gasPrice: await GAS_PRICE,
                 })
             const res = await multiSign.methods.submitTransaction(targetAddress, "0", encode)
                 .send({
                     from: address,
-                    gasPrice: GAS_PRICE,
+                    gasPrice: await GAS_PRICE,
                     gas
                 })
             console.log(res)
