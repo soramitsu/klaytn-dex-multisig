@@ -76,6 +76,7 @@ function App() {
                 address
             )
         }])
+        decoder.addABI(abiFile.abi);
     };
 
     const handleDelete = (name) => () => {
