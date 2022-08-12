@@ -1,5 +1,5 @@
-import React, {useState} from "react";
-import {Accordion, Button, Form} from 'react-bootstrap';
+import React from "react";
+import {Accordion} from 'react-bootstrap';
 import ViewContract from "./ViewContract";
 
 const ViewContracts = ({toAddress, multiSign, contract, abi, address, keyName}) => {

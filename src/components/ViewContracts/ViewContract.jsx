@@ -1,7 +1,8 @@
 import React from "react";
 import {Accordion, Button, Form} from "react-bootstrap";
+const { caver } = window
 
-const GAS_PRICE = 250000000000
+const GAS_PRICE = caver.rpc.klay.getGasPrice();
 
 const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) => {
     const [result, setResult] = React.useState('');
@@ -15,7 +16,7 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
             acc[key] = {
                 id: key,
                 data: it,
-                value: undefined
+                value: ''
             }
             return acc
         }, {}))
@@ -34,6 +35,9 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
         if (it.data.type === 'address[]') {
             return it.value.split(',')
         }
+        if (it.data.type === 'bytes') {
+            return it.value.toString()
+        }
 
         return it.value.toString()
     })
@@ -41,7 +45,7 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
         if (!contract.methods[name]) {
             console.log(contract.methods, item.name)
             setResult('Function not exist')
-            throw 'NOT EXISTS'
+            throw new Error('NOT EXISTS')
         }
         return true
     }
@@ -73,7 +77,7 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
                 value: e.target.value
             }
         })
-
+        console.log('hey')
     }
 
     const handleCall = async () => {
@@ -91,7 +95,6 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
 
             console.log(res)
             const json = JSON.stringify(res)
-            console.log(json)
 
             setResult(`${item.name}: ${Array.isArray(res) ? res.join(' \b| ') : json}`)
         } catch (e) {
@@ -167,11 +170,16 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
     const handleMultiSign = async () => {
         try {
             const [encode, targetAddress] = await handleEncodeABI()
+            const gas = await multiSign.methods.submitTransaction(targetAddress, "0", encode)
+                .estimateGas({
+                    from: address,
+                    gasPrice: GAS_PRICE,
+                })
             const res = await multiSign.methods.submitTransaction(targetAddress, "0", encode)
                 .send({
                     from: address,
                     gasPrice: GAS_PRICE,
-                    gas: '50000000'
+                    gas
                 })
             console.log(res)
             setResult(`${item.name}: ${res.transactionHash}`)
@@ -216,18 +224,17 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
                         </div>
                     ))}
 
-                    {item.stateMutability === "view" && (
-                        <Button type="button" className="mt-3 m-2" onClick={handleCall}>Call</Button>
+                    {(item.stateMutability === "view" || item.stateMutability === "pure") && (
+                        <Button type="button" className="mt-3 mb-2 me-2" onClick={handleCall}>Call</Button>
                     )}
                     {item.stateMutability === "nonpayable" && (
-                        <Button type="button" className="mt-3 m-2" onClick={handleSend}>Send</Button>
+                        <Button type="button" className="mt-3 mb-2 me-2" onClick={handleSend}>Send</Button>
                     )}
-
                     {item.stateMutability === "nonpayable" && (
+                        <Button type="button" className="mt-3 m-2" onClick={handleMultiSign}>Submit</Button>
+                    )}
+                    {item.stateMutability !== "view" && (
                         <Button type="button" className="mt-3 m-2" onClick={estimateGas}>Estimate Gas</Button>
-                    )}
-                    {item.stateMutability === "nonpayable" && (
-                        <Button type="button" className="mt-3 m-2" onClick={handleMultiSign}>Send multisign</Button>
                     )}
                     <Button type="button" className="mt-3 m-2" onClick={handleEncodeABI}>
                         Encode ABI

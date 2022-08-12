@@ -1,25 +1,25 @@
-import './App.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import {Accordion, Button, Form} from "react-bootstrap";
+import "./App.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import { Accordion, Button, Form } from "react-bootstrap";
 import ViewContracts from "./components/ViewContracts";
-import multisignABI from './utils/multisign.json'
-import farmingABI from './utils/farming.json'
-import React, {useEffect, useState} from "react";
+import ViewTransactions from "./components/ViewTransactions";
+import { tabs } from "./config/constants/tabs";
+import { getMultisigContract, getDecoder } from "./utils/contractHelper";
+import { getTransactions } from "./utils/getTransactionsHelper";
+import React, { useEffect, useState } from "react";
 
 function App() {
-    const {caver, klaytn} = window
-    const [address, setAddress] = useState(null)
+    const { caver, klaytn } = window
+    const [address, setAddress] = useState('')
     const [toAddress, setToAddress] = useState("0x32bE07FB9dBf294c2e92715F562f7aBA02b7443A")
     const [contracts, setContracts] = useState([])
-    const [transactions, setTransactions] = React.useState({
+    const [transactions, setTransactions] = useState({
+        failed: [],
+        executed: [],
         pending: [],
-        exec: []
     })
-    const multiSign = new caver.klay.Contract(
-        multisignABI.abi,
-        "0xcF00533ad18d86f00d843BEdc105cCa5b5A129CE"
-    )
-
+    const multiSign = getMultisigContract()
+    const decoder = getDecoder()
     useEffect(() => {
         klaytn.enable().then((addresses) => {
             const address = addresses[0]
@@ -27,7 +27,7 @@ function App() {
             setAddress(address)
         })
 
-        setContracts(tabs.map(({abi, address, name}) => ({
+        setContracts(tabs.map(({ abi, address, name }) => ({
             abi,
             address,
             name,
@@ -36,63 +36,19 @@ function App() {
                 address
             )
         })))
-        getTransactions()
-
+        fetchData()
         // setInterval(getTransactions, 5000)
-
-
     }, [])
 
-    const getTransactions = async () => {
-
-        const pendingCount = await multiSign.methods.getTransactionCount(true, false).call()
-        const execCount = await multiSign.methods.getTransactionCount(false, true).call()
-
-
-        console.log({pendingCount, execCount})
-
-        const pendingTrIds = await multiSign.methods.getTransactionIds(0, pendingCount, true, false).call()
-        const execTrIds = await multiSign.methods.getTransactionIds(0, execCount, false, true).call()
-
-        console.log({pendingTrIds, execTrIds})
-
-        const pendingData = await Promise.all(pendingTrIds
-            .filter((id,index) => (id === 0 && index === 0) || id !== 0)
-            .map(async (id) => {
-                return await multiSign.methods.getTransactionInfo(id).call()
-            }))
-
-        const execData = await Promise.all(execTrIds
-            .filter((id,index) => (id === 0 && index === 0) || id !== 0)
-            .map(async (id) => {
-                return await multiSign.methods.getTransactionInfo(id).call()
-            }))
-
-        setTransactions({
-            pending: pendingData,
-            exec: execData
-        })
-
-        console.log({pendingData, execData})
+    const fetchData = async () => {
+        const data = await getTransactions()
+        setTransactions(data)
     }
 
     if (!caver || !klaytn) {
-        alert('Kaikas is not installed')
+        alert("Kaikas is not installed")
         return null
     }
-
-    const tabs = [
-        {
-            address: '0xcF00533ad18d86f00d843BEdc105cCa5b5A129CE',
-            name: 'Multi Sign Contract',
-            abi: multisignABI.abi
-        },
-        {
-            address: '0x32bE07FB9dBf294c2e92715F562f7aBA02b7443A',
-            name: 'Farming Contract',
-            abi: farmingABI.abi
-        }
-    ]
 
     const handleSubmit = (event) => {
         event.preventDefault()
@@ -120,11 +76,13 @@ function App() {
                 address
             )
         }])
+        decoder.addABI(abiFile.abi);
     };
 
     const handleDelete = (name) => () => {
         setContracts(contracts.filter((c) => c.name !== name))
     }
+    
 
     return (
         <div className="App">
@@ -133,7 +91,7 @@ function App() {
                     <div>From Address: <strong>{address || 'Not connected'}</strong></div>
                     <div>To Address: <strong>{toAddress || 'Not connected'}</strong></div>
 
-                    {contracts.map(({name, address}) => (
+                    {contracts.map(({ name, address }) => (
                         <div key={address}>{name}: {address} </div>
                     ))}
                 </div>
@@ -167,55 +125,14 @@ function App() {
 
             <div className="border rounded p-3 mb-3 col-8 mx-auto my-2">
                 <h3>Transactions</h3>
-                <Button className="my-3" onClick={getTransactions}>Update</Button>
-
-                <div>
-                    <h4>Pending</h4>
-                    <Accordion>
-                        {transactions.pending.map((it, index) => (
-                            <Accordion.Item key={it.data_} eventKey={it.data_}>
-                                <Accordion.Header>
-                                    <div>destination_: {it.destination_}</div>
-                                </Accordion.Header>
-                                <Accordion.Body>
-                                    <div className="border-bottom mb-2"><strong>Param 0:</strong> {it[0]}</div>
-                                    <div className="border-bottom mb-2"><strong>Param 1:</strong> {it[1]}</div>
-                                    <div className="border-bottom mb-2"><strong>Param 2:</strong> {it[2]}</div>
-                                    <div className="border-bottom mb-2"><strong>Param 3:</strong> {it[3]}</div>
-                                    <div className="border-bottom mb-2"><strong>Data:</strong> {it.data_}</div>
-                                    <div className="border-bottom mb-2"><strong>destination_:</strong> {it.destination_}</div>
-                                    <div className="border-bottom mb-2"><strong>executed_:</strong> {it.executed_ ? 'true' : 'false'}</div>
-                                    <div className="border-bottom mb-2"><strong>value_:</strong> {it.value_}</div>
-                                    <div className="border-bottom mb-2"><strong>votesLength_:</strong> {it.votesLength_}</div>
-                                </Accordion.Body>
-                            </Accordion.Item>
-                        ))}
-                    </Accordion>
-                </div>
-
-                <div>
-                    <h4 className="mt-3">Execution</h4>
-                    <Accordion>
-                        {transactions.exec.map((it, index) => (
-                            <Accordion.Item key={it.data_} eventKey={it.data_}>
-                                <Accordion.Header>
-                                    <div>destination_: {it.destination_}</div>
-                                </Accordion.Header>
-                                <Accordion.Body>
-                                    <div className="border-bottom mb-2">Param 0: {it[0]}</div>
-                                    <div className="border-bottom mb-2">Param 1: {it[1]}</div>
-                                    <div className="border-bottom mb-2">Param 2: {it[2]}</div>
-                                    <div className="border-bottom mb-2">Param 3: {it[3]}</div>
-                                    <div className="border-bottom mb-2">Data: {it.data_}</div>
-                                    <div className="border-bottom mb-2">destination_: {it.destination_}</div>
-                                    <div className="border-bottom mb-2">executed_: {it.executed_ ? 'true' : 'false'}</div>
-                                    <div className="border-bottom mb-2">value_: {it.value_}</div>
-                                    <div className="border-bottom mb-2">votesLength_: {it.votesLength_}</div>
-                                </Accordion.Body>
-                            </Accordion.Item>
-                        ))}
-                    </Accordion>
-                </div>
+                <Button className="my-3" onClick={() => {fetchData()}}>Update</Button>
+                <ViewTransactions
+                    decoder={decoder}
+                    transactions={transactions}
+                    multisig={multiSign}
+                    address={address}
+                    caver={caver}>
+                </ViewTransactions>
             </div>
 
             <Form className="border rounded p-3 mb-3 col-8 mx-auto" onSubmit={handleSubmit}>
@@ -250,13 +167,13 @@ function App() {
             </Form>
 
             <Accordion className="col-8 mx-auto">
-                {contracts.map(({name, contract, abi}, i) => (
+                {contracts.map(({ name, contract, abi }, i) => (
                     <Accordion.Item key={`${name}-${i}`} eventKey={name}>
                         <Accordion.Header>
                             <div
                                 className="w-100 d-flex full-w flex-row justify-content-between px-3 align-content-center">
-                                <span>{name}</span>
-                                <Button onClick={handleDelete(name)} size="sm" variant="danger">Delete</Button>
+                                <div className="align-self-center">{name}</div>
+                                <Button onClick={() => {handleDelete(name)}} size="sm" variant="danger">Delete</Button>
                             </div>
                         </Accordion.Header>
                         <Accordion.Body>
