@@ -1,7 +1,8 @@
 import React from "react";
 import {Accordion, Button, Form} from "react-bootstrap";
+const { caver } = window
 
-const GAS_PRICE = 250000000000
+const GAS_PRICE = caver.rpc.klay.getGasPrice();
 
 const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) => {
     const [result, setResult] = React.useState('');
