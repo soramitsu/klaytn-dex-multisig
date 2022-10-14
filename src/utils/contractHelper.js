@@ -7,7 +7,7 @@ const { caver } = window
 export const getMultisigContract = () => {
     return new caver.klay.Contract(
         multisignABI.abi,
-        '0xcF00533ad18d86f00d843BEdc105cCa5b5A129CE'
+        '0xbd96ae2af4b50540b532d5e492166c7fd3b8b3a5'
     )
 }
 
