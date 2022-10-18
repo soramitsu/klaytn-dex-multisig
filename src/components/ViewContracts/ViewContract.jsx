@@ -4,7 +4,7 @@ const { caver } = window
 
 const GAS_PRICE = caver.rpc.klay.getGasPrice();
 
-const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) => {
+const ViewContract = ({multiSign, address, item, contract, keyName}) => {
     const [result, setResult] = React.useState('');
     const [params, setParams] = React.useState(null)
 
@@ -139,33 +139,6 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
         }
     }
 
-    const estimateGas = async () => {
-        try {
-            isExistMethods(item.name)
-            let gas = null
-
-            if (getParams()?.length) {
-                gas = await contract.methods[item.name](...getParams())
-                    .estimateGas({
-                        from: address,
-                        to: toAddress,
-                        gasPrice: await GAS_PRICE,
-                    })
-            }
-
-            if (!getParams()?.length) {
-                gas = await contract.methods[item.name]().estimateGas({
-                    from: address,
-                    to: toAddress,
-                    gasPrice: await GAS_PRICE,
-                })
-            }
-            setResult(`gas used: ${gas}`)
-        } catch (e) {
-            setResult(`ERROR ${e.message}`)
-        }
-    }
-
     const handleMultiSign = async () => {
         try {
             const [encode, targetAddress] = await handleEncodeABI()
@@ -231,9 +204,6 @@ const ViewContract = ({toAddress, multiSign, address, item, contract, keyName}) 
                     )}
                     {item.stateMutability === "nonpayable" && (
                         <Button type="button" className="mt-3 m-2" onClick={handleMultiSign}>Submit</Button>
-                    )}
-                    {item.stateMutability !== "view" && (
-                        <Button type="button" className="mt-3 m-2" onClick={estimateGas}>Estimate Gas</Button>
                     )}
                     <Button type="button" className="mt-3 m-2" onClick={handleEncodeABI}>
                         Encode ABI

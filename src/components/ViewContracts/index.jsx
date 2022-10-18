@@ -2,7 +2,7 @@ import React from "react";
 import {Accordion} from 'react-bootstrap';
 import ViewContract from "./ViewContract";
 
-const ViewContracts = ({toAddress, multiSign, contract, abi, address, keyName}) => {
+const ViewContracts = ({multiSign, contract, abi, address, keyName}) => {
 
     return (
         <Accordion>
@@ -10,7 +10,6 @@ const ViewContracts = ({toAddress, multiSign, contract, abi, address, keyName}) 
                 .filter((input) => input.type === "function")
                 .map((item, i) =>
                     <ViewContract
-                        toAddress={toAddress}
                         multiSign={multiSign}
                         key={`${keyName}-${i}`}
                         keyName={keyName}

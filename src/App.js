@@ -11,7 +11,6 @@ import React, { useEffect, useState } from "react";
 function App() {
     const { caver, klaytn } = window
     const [address, setAddress] = useState('')
-    const [toAddress, setToAddress] = useState("0x32bE07FB9dBf294c2e92715F562f7aBA02b7443A")
     const [contracts, setContracts] = useState([])
     const [transactions, setTransactions] = useState({
         failed: [],
@@ -89,7 +88,6 @@ function App() {
             <div className="border rounded p-3 mb-3 col-8 mx-auto">
                 <div className="row">
                     <div>From Address: <strong>{address || 'Not connected'}</strong></div>
-                    <div>To Address: <strong>{toAddress || 'Not connected'}</strong></div>
 
                     {contracts.map(({ name, address }) => (
                         <div key={address}>{name}: {address} </div>
@@ -107,19 +105,6 @@ function App() {
                     className="mb-2"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                />
-            </div>
-
-            <div className="border rounded p-3 mb-3 col-8 mx-auto my-2">
-                <h3>To Address</h3>
-                <Form.Control
-                    placeholder={'From Address'}
-                    type="text"
-                    name={'create_contract_address'}
-                    aria-describedby="passwordHelpBlock"
-                    className="mb-2"
-                    value={toAddress}
-                    onChange={(e) => setToAddress(e.target.value)}
                 />
             </div>
 
@@ -179,10 +164,9 @@ function App() {
                         <Accordion.Body>
                             <ViewContracts
                                 multiSign={multiSign}
-                                address={address}
                                 contract={contract}
                                 abi={abi}
-                                toAddress={toAddress}
+                                address={address}
                                 keyName={`${name}-${i}`}
                             />
                         </Accordion.Body>
