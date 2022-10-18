@@ -12,7 +12,7 @@ const ViewTransaction = ({ decoder, transaction, multisig, address, caver, statu
             });
             if (!lowerCase.includes(address)) {
                 const gasPrice = await caver.klay.getGasPrice();
-                const _tx = await multisig.methods.confirmTransaction(tx.id)
+                const _tx = await multisig.methods.confirmAndExecuteTransaction(tx.id)
                     .send({
                         from: address,
                         gasPrice,
