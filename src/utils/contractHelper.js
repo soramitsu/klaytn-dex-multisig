@@ -1,6 +1,7 @@
 import multisignABI from '../config/abis/multisign.json'
 import farmingABI from '../config/abis/farming.json'
 import stakingFactoryABI from '../config/abis/stakingFactory.json'
+import platformToken from '../config/abis/platformToken.json'
 const abiDecoder = require('abi-decoder');
 const { caver } = window
 
@@ -15,5 +16,6 @@ export const getDecoder = () => {
     abiDecoder.addABI(multisignABI.abi)
     abiDecoder.addABI(farmingABI.abi)
     abiDecoder.addABI(stakingFactoryABI.abi)
+    abiDecoder.addABI(platformToken.abi)
     return abiDecoder
 }

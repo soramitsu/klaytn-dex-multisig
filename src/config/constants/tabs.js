@@ -1,6 +1,7 @@
 import multisignABI from '../abis/multisign.json'
 import farmingABI from '../abis/farming.json'
 import stakingFactoryABI from '../abis/stakingFactory.json'
+import platformToken from '../abis/platformToken.json'
 
 export const tabs = [
     {
@@ -17,5 +18,10 @@ export const tabs = [
         address: '0x3c1442981f9f14b07a05b4a6fb0c825a8167a8bd',
         name: 'Staking Factory Contract',
         abi: stakingFactoryABI.abi
+    },
+    {
+        address: '0x42f127458246b1db8d8a58d31a22b307408439e4',
+        name: 'Platform Token',
+        abi: platformToken.abi
     },
 ]
