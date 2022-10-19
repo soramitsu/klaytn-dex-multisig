@@ -96,19 +96,6 @@ function App() {
             </div>
 
             <div className="border rounded p-3 mb-3 col-8 mx-auto my-2">
-                <h3>From Address</h3>
-                <Form.Control
-                    placeholder={'From Address'}
-                    type="text"
-                    name={'create_contract_address'}
-                    aria-describedby="passwordHelpBlock"
-                    className="mb-2"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                />
-            </div>
-
-            <div className="border rounded p-3 mb-3 col-8 mx-auto my-2">
                 <h3>Transactions</h3>
                 <Button className="my-3" onClick={() => {fetchData()}}>Update</Button>
                 <ViewTransactions

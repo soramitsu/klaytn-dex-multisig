@@ -11,7 +11,7 @@ export const getTransactions = async () => {
     const pendingTrIds = await multiSign.methods.getTransactionIds(0, pendingCount, true, false).call()
     const execTrIds = await multiSign.methods.getTransactionIds(0, execCount, false, true).call()
 
-    console.log({ pendingTrIds, execTrIds })
+    console.log({ execTrIds })
 
     const pendingTempData = (await Promise.all(pendingTrIds
         .filter((id, index) => (id === 0 && index === 0) || id !== 0)
